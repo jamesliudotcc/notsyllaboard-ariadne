@@ -24,7 +24,7 @@ DATABASE = {
 			"name": "Sarah King",
 			"email": "009kings@gmail.com",
 			"password": "123123123",
-			"contacts": [1]
+			"connections": [1]
 		},
 		{
 			"id": 2,
@@ -59,33 +59,33 @@ DATABASE = {
 				{
 					"id": 1,
 					"title": "Set up phone interview",
-					"due": datetime(2020, 10, 12, 17, tzinfo=timezone("America/Los_Angeles")),
+					"due": datetime(2020, 10, 12, 17, tzinfo=timezone("America/Los_Angeles")).strftime("%c"),
 					"completed": {
-					"content": "Have a phone screen set up, just behavioural stuff.",
-					"time": datetime(2020, 10, 12, tzinfo=timezone("America/Los_Angeles"))
+						"content": "Have a phone screen set up, just behavioural stuff.",
+						"time": datetime(2020, 10, 12, tzinfo=timezone("America/Los_Angeles")).strftime("%c")
 					},
 					"notes": [
 					{
 						"content": "Sent an intro email with my availability",
-						"time": datetime(2020, 10, 7, tzinfo=timezone("America/Los_Angeles"))
+						"time": datetime(2020, 10, 7, tzinfo=timezone("America/Los_Angeles")).strftime("%c")
 					},
 					{
 						"content": "She needed my references so I sent her Anna and Brandi's contact info",
-						"time": datetime(2020, 10, 9, tzinfo=timezone("America/Los_Angeles"))
+						"time": datetime(2020, 10, 9, tzinfo=timezone("America/Los_Angeles")).strftime("%c")
 					}
 					]
 				}, {
 					"id": 2,
 					"title": "Follow up for Tech interview",
-					"due": datetime(2020, 10, 25, 17, tzinfo=timezone("America/Los_Angeles")),
+					"due": datetime(2020, 10, 25, 17, tzinfo=timezone("America/Los_Angeles")).strftime("%c"),
 					"notes": [
 						{
 							"content": "Sent an email with my availability",
-							"time": datetime(2020, 10, 12, tzinfo=timezone("America/Los_Angeles"))
+							"time": datetime(2020, 10, 12, tzinfo=timezone("America/Los_Angeles")).strftime("%c")
 						},
 						{
 							"content": "Have a practice sesh with James set up",
-							"time": datetime(2020, 10, 15, 17, 30, tzinfo=timezone("America/Los_Angeles"))
+							"time": datetime(2020, 10, 15, 17, 30, tzinfo=timezone("America/Los_Angeles")).strftime("%c")
 						}
 					]
 				}
@@ -118,14 +118,24 @@ def resolve_connection(*_, id):
 # This will be MUCH easier with an actual ODM
 @query.field("actions")
 def resolve_actions(*_, user_id, active=False):
-	all_actions = []
+	print("🧨", user_id)
+	user = next(user_obj for user_obj in DATABASE["users"] if user_obj["id"] == int(user_id))
+	print(f'✨ {user["name"]}')
 	# find all connections for a user
-	user = (user for user in users if user["id"] == int(user))
-	print(f'✨ {user.name}')
+	connections = [connection for connection in DATABASE["connections"] if connection["id"] in user["connections"]]
+	print(f'🗿 {connections}')
 	# iterate through all connections
-
 	# Push each action to a list (unless active is True and date is later than now)
-	# return list
+	if active is False:
+		all_actions = [action for connection in connections for action in connection["actions"]]
+	else:
+		all_actions = []
+		for connection in connections:
+			for action in connection["actions"]:
+				# Older is bigger, will only show action with due dates in da future
+				if datetime.strptime(action["due"], '%c') > datetime.now():
+					all_actions.append(action)
+	return all_actions
 
 @query.field("me")
 def resolve_me(*_, id):

@@ -5,6 +5,7 @@ type User {
   name: String!
   email: String!
   password: String!
+  connections: [Connection] # Necessary? not sure
 }
 
 type Connection {
