@@ -16,7 +16,7 @@ type Connection {
 }
 
 type Contact {
-  type: String!
+  type: String! # Could stand to be a big-ass enum
   content: String!
   connection: Connection
 }
@@ -36,17 +36,11 @@ type Note {
   action: Action
 }
 
-# type KQuote {
-#   quote: String!
-# }
-
 type Query {
-  contacts: [Connection]
+  connections: [Connection]
   connection(id: ID!): Connection
-  notes: [Notes]
-  actions: [Action]
-  me: User
-  # yeezy: KQuote
+  actions(user_id: ID!, active: Boolean): [Action]!
+  me(id: ID!): User
 }  
 
 type SignupPayload {
@@ -62,40 +56,40 @@ type LoginPayload {
   # Some auth shit, maybe jwt?
 }
 
-type Mutation {
-  signup(
-    name: String!
-    email: String!
-    password: String!
-  ): SignupPayload
+# type Mutation {
+#   signup(
+#     name: String!
+#     email: String!
+#     password: String!
+#   ): SignupPayload
 
-  login(
-    email: String!
-    password: String!
-  ): LoginPayload
+#   login(
+#     email: String!
+#     password: String!
+#   ): LoginPayload
 
-  createConnection(
-    name: String!
-    contacts: [Contact] # Will this work?
-    info: String
-  ): Connection
+#   createConnection(
+#     name: String!
+#     contacts: [Contact] # Will this work?
+#     info: String
+#   ): Connection
   
-  createContact(
-    type: String!
-    content: String!
-    connection: ID!
-  ): Connection # Maybe return just the created contact?
+#   createContact(
+#     type: String!
+#     content: String!
+#     connection: ID!
+#   ): Connection # Maybe return just the created contact?
 
-  createAction(
-    title: String!
-    due: Date!
-    note: Note!
-    connection: ID!
-  ): Action
+#   createAction(
+#     title: String!
+#     due: Date!
+#     note: Note!
+#     connection: ID!
+#   ): Action
 
-  createNote(
-    content: String!
-    time: Date!
-    action: ID!
-  ): Note # Should we return the Action instead?
-}
+#   createNote(
+#     content: String!
+#     time: Date!
+#     action: ID!
+#   ): Note # Should we return the Action instead?
+# }
