@@ -1,51 +1,101 @@
-type Company {
-  id: Int
-  name: String
-  linkedIn: String
-  contacts: [Contact]!
+scalar Date # diz bitch can use python datetime.datetime which has tzinfo
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  password: String!
 }
-type Contact {
-  id: Int
-  name: String
-  email: String
-  timeZone: String # Should really be a large enum
-  companies: [Company]!
-}
-# type Interaction {
-#   id: Int
-#   contact: Contact!
-#   interactionType: String! # Should really be a large enum
-#   note: String!
-#   time: Int!
-#   nextInteractionType: String
-#   nextInteractionTime: Int
-#   nextInteractionPlace: String
-#   nextInteractionNote: String
-# }
-type Query {
+
+type Connection {
+  id: ID!
+  name: String!
+  info: String
   contacts: [Contact]
-  companies: [Company]
-  # interactions(contactId: [Int]): [Interaction]
+  actions: [Action]
 }
+
+type Contact {
+  type: String!
+  content: String!
+  connection: Connection
+}
+
+type Action {
+  id: ID!
+  title: String!
+  due: Date!
+  completed: Note
+  notes: [Note]
+  connection: Connection!
+}
+
+type Note {
+  content: String!
+  time: Date!
+  action: Action
+}
+
+# type KQuote {
+#   quote: String!
+# }
+
+type Query {
+  contacts: [Connection]
+  connection(id: ID!): Connection
+  notes: [Notes]
+  actions: [Action]
+  me: User
+  # yeezy: KQuote
+}  
+
+type SignupPayload {
+  status: String!
+  error: String
+  user: User
+}
+
+type LoginPayload {
+  status: String!
+  error: String
+  user: User
+  # Some auth shit, maybe jwt?
+}
+
 type Mutation {
-  createContact(
+  signup(
     name: String!
     email: String!
-    timeZone: String!
-    company: Int
-  ): Contact
-  createCompany(
+    password: String!
+  ): SignupPayload
+
+  login(
+    email: String!
+    password: String!
+  ): LoginPayload
+
+  createConnection(
     name: String!
-    linkedIn: String # Should be required in real app?
-  ): Company
-  # createInteraction(
-  #   contactId: Int!
-  #   interactionType: String
-  #   note: String
-  #   time: Int
-  #   nextInteractionNote: String
-  #   nextInteractionPlace: String
-  #   nextInteractionTime: Int
-  #   nextInteractionType: String
-  # ): Interaction
+    contacts: [Contact] # Will this work?
+    info: String
+  ): Connection
+  
+  createContact(
+    type: String!
+    content: String!
+    connection: ID!
+  ): Connection # Maybe return just the created contact?
+
+  createAction(
+    title: String!
+    due: Date!
+    note: Note!
+    connection: ID!
+  ): Action
+
+  createNote(
+    content: String!
+    time: Date!
+    action: ID!
+  ): Note # Should we return the Action instead?
 }

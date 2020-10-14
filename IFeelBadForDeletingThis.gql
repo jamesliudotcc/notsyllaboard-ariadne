@@ -1,0 +1,51 @@
+type Company {
+  id: Int
+  name: String
+  linkedIn: String
+  contacts: [Contact]!
+}
+type Contact {
+  id: Int
+  name: String
+  email: String
+  timeZone: String # Should really be a large enum (surely we can get a list for this)
+  companies: [Company]!
+}
+# type Interaction {
+#   id: Int
+#   contact: Contact!
+#   interactionType: String! # Should really be a large enum
+#   note: String!
+#   time: Int!
+#   nextInteractionType: String
+#   nextInteractionTime: Int
+#   nextInteractionPlace: String
+#   nextInteractionNote: String
+# }
+type Query {
+  contacts: [Contact]
+  companies: [Company]
+  # interactions(contactId: [Int]): [Interaction]
+}
+type Mutation {
+  createContact(
+    name: String!
+    email: String!
+    timeZone: String!
+    company: Int
+  ): Contact
+  createCompany(
+    name: String!
+    linkedIn: String # Should be required in real app?
+  ): Company
+  # createInteraction(
+  #   contactId: Int!
+  #   interactionType: String
+  #   note: String
+  #   time: Int
+  #   nextInteractionNote: String
+  #   nextInteractionPlace: String
+  #   nextInteractionTime: Int
+  #   nextInteractionType: String
+  # ): Interaction
+}
