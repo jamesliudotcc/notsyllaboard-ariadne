@@ -9,6 +9,7 @@ from ariadne import (
     load_schema_from_path,
 )
 from ariadne.asgi import GraphQL
+from starlette.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 from pytz import timezone
 
@@ -173,4 +174,8 @@ def resolve_me(*_, id):
 schema = make_executable_schema(type_defs, query, fallback_resolvers)
 
 # Create an ASGI app using the schema, running in debug mode
-app = GraphQL(schema, debug=True)
+app = CORSMiddleware(
+    GraphQL(schema, debug=True),
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+)
