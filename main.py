@@ -2,6 +2,8 @@
 Entry point for Not Syllaboard
 """
 
+from __future__ import annotations
+
 from ariadne import (
     QueryType,
     fallback_resolvers,
@@ -9,13 +11,30 @@ from ariadne import (
     load_schema_from_path,
 )
 from ariadne.asgi import GraphQL
+from bson.errors import BSONError
 from starlette.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 from pytz import timezone
+import os
+from bson.objectid import ObjectId
+from dotenv import load_dotenv
+from urllib.parse import quote_plus
+import pymongo
+
+
+load_dotenv()
+
+MONGO_DB_PASSWORD = quote_plus(os.getenv("MONGO_DB_PASSWORD"))
+MONGO_DB_USERNAME = quote_plus(os.getenv("MONGO_DB_USERNAME"))
 
 type_defs = load_schema_from_path("./schema.gql")
 # Map resolver functions to Query fields using QueryType
 query = QueryType()
+
+client = pymongo.MongoClient(
+    f"mongodb+srv://{MONGO_DB_USERNAME}:{MONGO_DB_PASSWORD}@db.eubgx.mongodb.net/db?retryWrites=true&w=majority"
+)
+db = client.db
 
 # This fake db took, like, an hour, mongodb will be easier
 DATABASE = {
@@ -118,17 +137,13 @@ DATABASE = {
 
 
 @query.field("connections")
-def resolve_connections(*_):
-    connections = DATABASE["connections"]
-    return connections
+def resolve_connections(*_) -> list[dict]:
+    return [connection for connection in db.connections.find()]
 
 
 @query.field("connection")
-def resolve_connection(*_, id):
-    for connection in DATABASE["connections"]:
-        if connection["id"] == int(id):
-            return connection
-        return None
+def resolve_connection(*_, _id):
+    return db.connections.find_one({"_id": ObjectId(_id)})
 
 
 # This will be MUCH easier with an actual ODM

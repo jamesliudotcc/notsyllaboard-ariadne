@@ -1,7 +1,6 @@
 scalar Date # diz bitch can use python datetime.datetime which has tzinfo
-
 type User {
-  id: ID!
+  _id: ID!
   name: String!
   email: String!
   password: String!
@@ -9,7 +8,7 @@ type User {
 }
 
 type Connection {
-  id: ID!
+  _id: ID!
   name: String!
   info: String
   contacts: [Contact]
@@ -39,10 +38,10 @@ type Note {
 
 type Query {
   connections: [Connection]
-  connection(id: ID!): Connection
+  connection(_id: ID!): Connection
   actions(user_id: ID!, active: Boolean): [Action]!
   me(id: ID!): User
-}  
+}
 
 type SignupPayload {
   status: String!
@@ -74,7 +73,7 @@ type LoginPayload {
 #     contacts: [Contact] # Will this work?
 #     info: String
 #   ): Connection
-  
+
 #   createContact(
 #     type: String!
 #     content: String!

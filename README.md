@@ -18,6 +18,8 @@ To run:
 ./run.sh
 ```
 
+Note, restart the server manually when editing .gql files.
+
 The "database" is literally a Python dict. Don't tell me I didn't warn you.
 
 Here is [how to write resolvers](https://ariadnegraphql.org/docs/resolvers).
