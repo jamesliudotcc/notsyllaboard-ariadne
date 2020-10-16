@@ -39,7 +39,7 @@ type Note {
 type Query {
   connections: [Connection]
   connection(_id: ID!): Connection
-  actions(user_id: ID!, active: Boolean): [Action]!
+  actions(active: Boolean): [Action]! # Consider only allowing Action on a connection query.
   me(id: ID!): User
 }
 
