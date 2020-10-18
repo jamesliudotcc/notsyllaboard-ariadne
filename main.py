@@ -4,6 +4,8 @@ Entry point for Not Syllaboard
 
 from __future__ import annotations
 
+from itertools import chain
+
 from ariadne import (
     QueryType,
     fallback_resolvers,
@@ -12,30 +14,30 @@ from ariadne import (
 )
 from ariadne.asgi import GraphQL
 from starlette.middleware.cors import CORSMiddleware
-from datetime import datetime, timedelta
-from pytz import timezone
-import os
-from bson.objectid import ObjectId
-from dotenv import load_dotenv
-from urllib.parse import quote_plus
+
 import pymongo
-from itertools import chain
+from bson.objectid import ObjectId
+from urllib.parse import quote_plus
+
+import os
+from dotenv import load_dotenv
+
+
+# Load The MongoDB
 
 load_dotenv()
 
 MONGO_DB_PASSWORD = quote_plus(os.getenv("MONGO_DB_PASSWORD"))
 MONGO_DB_USERNAME = quote_plus(os.getenv("MONGO_DB_USERNAME"))
 
-type_defs = load_schema_from_path("./schema.gql")
-# Map resolver functions to Query fields using QueryType
-query = QueryType()
 
 client = pymongo.MongoClient(
     f"mongodb+srv://{MONGO_DB_USERNAME}:{MONGO_DB_PASSWORD}@db.eubgx.mongodb.net/db?retryWrites=true&w=majority"
 )
 db = client.db
 
-# Tabs are so BIG and not, like thicc, just so much space. But I changed for you
+
+# The GraphQL
 
 # Basic Heirarchy is as such
 # User
@@ -45,6 +47,9 @@ db = client.db
 #     completed: Note
 #     [Note]
 
+type_defs = load_schema_from_path("./schema.gql")
+# Map resolver functions to Query fields using QueryType
+query = QueryType()
 
 @query.field("connections")
 def resolve_connections(*_) -> list[dict]:
