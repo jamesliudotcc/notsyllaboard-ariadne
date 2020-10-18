@@ -7,19 +7,26 @@ Bitch me too
 
 To install requirments:
 
-```
-python3.8 -m venv env
+```bash
+python3.9 -m venv env
 source env/bin/activate
 pip install -r requirements.txt
 ```
 
 To run:
-```
+
+```bash
 ./run.sh
 ```
 
 Note, restart the server manually when editing .gql files.
 
-The "database" is literally a Python dict. Don't tell me I didn't warn you.
-
 Here is [how to write resolvers](https://ariadnegraphql.org/docs/resolvers).
+
+The workaround to run Black globally:
+
+```bash
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+pipx install black
+```

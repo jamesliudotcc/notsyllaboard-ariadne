@@ -4,128 +4,45 @@ Entry point for Not Syllaboard
 
 from __future__ import annotations
 
+from itertools import chain
+
 from ariadne import (
     QueryType,
+    MutationType,
     fallback_resolvers,
     make_executable_schema,
     load_schema_from_path,
 )
 from ariadne.asgi import GraphQL
-from bson.errors import BSONError
 from starlette.middleware.cors import CORSMiddleware
-from datetime import datetime, timedelta
-from pytz import timezone
-import os
-from bson.objectid import ObjectId
-from dotenv import load_dotenv
-from urllib.parse import quote_plus
-import pymongo
 
+import bcrypt
+import jwt
+
+import pymongo
+from bson.objectid import ObjectId
+from urllib.parse import quote_plus
+
+import os
+from dotenv import load_dotenv
+
+from constants import ERRORS
+
+JWT_KEY = os.getenv("JWT_KEY")
+
+# Load The MongoDB
 
 load_dotenv()
 
 MONGO_DB_PASSWORD = quote_plus(os.getenv("MONGO_DB_PASSWORD"))
 MONGO_DB_USERNAME = quote_plus(os.getenv("MONGO_DB_USERNAME"))
 
-type_defs = load_schema_from_path("./schema.gql")
-# Map resolver functions to Query fields using QueryType
-query = QueryType()
-
 client = pymongo.MongoClient(
     f"mongodb+srv://{MONGO_DB_USERNAME}:{MONGO_DB_PASSWORD}@db.eubgx.mongodb.net/db?retryWrites=true&w=majority"
 )
 db = client.db
 
-# This fake db took, like, an hour, mongodb will be easier
-DATABASE = {
-    "users": [
-        {
-            "id": 1,
-            "name": "Sarah King",
-            "email": "009kings@gmail.com",
-            "password": "123123123",
-            "connections": [1],
-        },
-        {
-            "id": 2,
-            "name": "James Liu",
-            "email": "james@jamesliu.cc",
-            "password": "God dammit jim I'm a hash not a password",
-        },
-    ],
-    "connections": [
-        {
-            "id": 1,
-            "name": "Madison Edmiston",
-            "info": "Student ops director for Seattle campus, go-to-gal for many ppl, loves dogs, can't eat gluten",
-            "contacts": [
-                {
-                    "id": 1,  # embedded docs get their own ID
-                    "type": "work email",
-                    "content": "madison.edmiston@ga.co",
-                },
-                {"id": 2, "type": "work phone", "content": "(206) 334-0998"},
-                {"id": 3, "type": "personal phone", "content": "(206) 333-9903"},
-            ],
-            "actions": [
-                {
-                    "id": 1,
-                    "title": "Set up phone interview",
-                    "due": datetime(
-                        2020, 10, 12, 17, tzinfo=timezone("America/Los_Angeles")
-                    ).strftime("%c"),
-                    "completed": {
-                        "content": "Have a phone screen set up, just behavioural stuff.",
-                        "time": datetime(
-                            2020, 10, 12, tzinfo=timezone("America/Los_Angeles")
-                        ).strftime("%c"),
-                    },
-                    "notes": [
-                        {
-                            "content": "Sent an intro email with my availability",
-                            "time": datetime(
-                                2020, 10, 7, tzinfo=timezone("America/Los_Angeles")
-                            ).strftime("%c"),
-                        },
-                        {
-                            "content": "She needed my references so I sent her Anna and Brandi's contact info",
-                            "time": datetime(
-                                2020, 10, 9, tzinfo=timezone("America/Los_Angeles")
-                            ).strftime("%c"),
-                        },
-                    ],
-                },
-                {
-                    "id": 2,
-                    "title": "Follow up for Tech interview",
-                    "due": datetime(
-                        2020, 10, 25, 17, tzinfo=timezone("America/Los_Angeles")
-                    ).strftime("%c"),
-                    "notes": [
-                        {
-                            "content": "Sent an email with my availability",
-                            "time": datetime(
-                                2020, 10, 12, tzinfo=timezone("America/Los_Angeles")
-                            ).strftime("%c"),
-                        },
-                        {
-                            "content": "Have a practice sesh with James set up",
-                            "time": datetime(
-                                2020,
-                                10,
-                                15,
-                                17,
-                                30,
-                                tzinfo=timezone("America/Los_Angeles"),
-                            ).strftime("%c"),
-                        },
-                    ],
-                },
-            ],
-        }
-    ],
-}
-# Tabs are so BIG and not, like thicc, just so much space. But I changed for you
+# The GraphQL
 
 # Basic Heirarchy is as such
 # User
@@ -135,7 +52,12 @@ DATABASE = {
 #     completed: Note
 #     [Note]
 
+type_defs = load_schema_from_path("./schema.gql")
+# Map resolver functions to Query fields using QueryType
+query = QueryType()
+mutation = MutationType()
 
+# TODO Connections should be own file
 @query.field("connections")
 def resolve_connections(*_) -> list[dict]:
     return [connection for connection in db.connections.find()]
@@ -146,47 +68,73 @@ def resolve_connection(*_, _id):
     return db.connections.find_one({"_id": ObjectId(_id)})
 
 
-# This will be MUCH easier with an actual ODM
+# TODO Actions should be own file
 @query.field("actions")
-def resolve_actions(*_, user_id, active=False):
-    print("🧨", user_id)
-    user = next(
-        user_obj for user_obj in DATABASE["users"] if user_obj["id"] == int(user_id)
-    )
+def resolve_actions(*_, active=False):
+    user = db.users.find_one()  # TODO: Make logged in user, not the first user
     print(f'✨ {user["name"]}')
-    # find all connections for a user
-    connections = [
-        connection
-        for connection in DATABASE["connections"]
-        if connection["id"] in user["connections"]
-    ]
-    print(f"🗿 {connections}")
-    # iterate through all connections
-    # Push each action to a list (unless active is True and date is later than now)
-    if active is False:
-        all_actions = [
-            action for connection in connections for action in connection["actions"]
-        ]
-    else:
-        all_actions = []
-        for connection in connections:
-            for action in connection["actions"]:
-                # Older is bigger, will only show action with due dates in da future
-                if datetime.strptime(action["due"], "%c") > datetime.now():
-                    all_actions.append(action)
-    return all_actions
+    # find all connections for a user, don't unpack
+    connections = chain.from_iterable(
+        db.connections.find({"_id": ObjectId(id)}) for id in user["connections"]
+    )
+    # lazily unpack actions from connections cursors
+    all_actions = (
+        action for connection in connections for action in connection["actions"]
+    )
+    if not active:
+        return [action for action in all_actions]
+    raise NotImplementedError  # TODO Refactor dates, after, should look like
+    # return [action for action in all_actions if actionable(action)]
+    # TODO write helper function for actionable(action: Action) -> Boolean
 
 
+# TODO Auth should be own file
 @query.field("me")
-def resolve_me(*_, id):
-    for user in DATABASE["users"]:
-        if user["id"] == int(id):
-            return user
-    return None
+def resolve_me(_, info):
+    token = info.context["request"].headers["authorization"].removeprefix("Bearer ")
+    decoded = jwt.decode(token.encode("utf-8"), JWT_KEY)
+
+    user = db.users.find_one(decoded)
+    user["_id"] = str(user["_id"])
+    user["password"] = ""
+
+    return user
+
+
+@mutation.field("signup")
+def resolve_signup(*_, name: str, email: str, password: str):
+    if not name or not email or not password:
+        return ERRORS["UNKNOWN"]
+    try:
+        hashed = bcrypt.hashpw(
+            password.encode("utf-8"),
+        )
+        db.users.insert_one({"name": name, "email": email, "password": hashed})
+
+    except:
+        # TODO Give useful error message for email address in use.
+        return ERRORS["UNKNOWN"]
+    return {
+        "status": "ok",
+        "jwt": ((jwt.encode({"email": email}, JWT_KEY)).decode("utf-8")),
+    }
+
+
+@mutation.field("login")
+def resolve_login(_, info, email: str, password: str):
+    user = db.users.find_one({"email": email})
+    if not user:
+        return ERRORS["USER_NOT_FOUND"]
+    if bcrypt.checkpw(password.encode("utf-8"), user["password"]):
+        return {
+            "status": "ok",
+            "jwt": (jwt.encode({"email": user["email"]}, JWT_KEY)).decode("utf-8"),
+        }
+    return ERRORS["BAD_CREDS"]
 
 
 # Create executable GraphQL schema
-schema = make_executable_schema(type_defs, query, fallback_resolvers)
+schema = make_executable_schema(type_defs, query, mutation, fallback_resolvers)
 
 # Create an ASGI app using the schema, running in debug mode
 app = CORSMiddleware(

@@ -1,4 +1,12 @@
 scalar Date # diz bitch can use python datetime.datetime which has tzinfo
+enum OkError {
+  ok
+  error
+}
+type Error {
+  code: Int
+  message: String
+}
 type User {
   _id: ID!
   name: String!
@@ -39,57 +47,49 @@ type Note {
 type Query {
   connections: [Connection]
   connection(_id: ID!): Connection
-  actions(user_id: ID!, active: Boolean): [Action]!
-  me(id: ID!): User
+  actions(active: Boolean): [Action]! # Consider only allowing Action on a connection query.
+  me: User
 }
 
 type SignupPayload {
-  status: String!
-  error: String
-  user: User
+  status: OkError!
+  error: Error
+  jwt: String
 }
 
 type LoginPayload {
-  status: String!
-  error: String
-  user: User
-  # Some auth shit, maybe jwt?
+  status: OkError!
+  error: Error
+  jwt: String
 }
 
-# type Mutation {
-#   signup(
-#     name: String!
-#     email: String!
-#     password: String!
-#   ): SignupPayload
+type Mutation {
+  signup(name: String!, email: String!, password: String!): SignupPayload
 
-#   login(
-#     email: String!
-#     password: String!
-#   ): LoginPayload
+  login(email: String!, password: String!): LoginPayload
 
-#   createConnection(
-#     name: String!
-#     contacts: [Contact] # Will this work?
-#     info: String
-#   ): Connection
+  #   createConnection(
+  #     name: String!
+  #     contacts: [Contact] # Will this work?
+  #     info: String
+  #   ): Connection
 
-#   createContact(
-#     type: String!
-#     content: String!
-#     connection: ID!
-#   ): Connection # Maybe return just the created contact?
+  #   createContact(
+  #     type: String!
+  #     content: String!
+  #     connection: ID!
+  #   ): Connection # Maybe return just the created contact?
 
-#   createAction(
-#     title: String!
-#     due: Date!
-#     note: Note!
-#     connection: ID!
-#   ): Action
+  #   createAction(
+  #     title: String!
+  #     due: Date!
+  #     note: Note!
+  #     connection: ID!
+  #   ): Action
 
-#   createNote(
-#     content: String!
-#     time: Date!
-#     action: ID!
-#   ): Note # Should we return the Action instead?
-# }
+  #   createNote(
+  #     content: String!
+  #     time: Date!
+  #     action: ID!
+  #   ): Note # Should we return the Action instead?
+}
