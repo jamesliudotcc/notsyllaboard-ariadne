@@ -103,13 +103,13 @@ users = [
         "id": 1,
         "name": "Sarah King",
         "email": "009kings@gmail.com",
-        "password": "123123123",
+        "password": b'$2b$12$Y6GNLfj.y/V1whUctj5tguuCJVBVzZQU6RRlngLbCFXSu6PUpAgAu',
     },
     {
         "id": 2,
         "name": "James Liu",
         "email": "james@jamesliu.cc",
-        "password": "God dammit jim I'm a hash not a password",
+        "password": b'$2b$12$Y6GNLfj.y/V1whUctj5tguuCJVBVzZQU6RRlngLbCFXSu6PUpAgAu',
     },
 ]
 
